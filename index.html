@@ -1,1 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone 18 - AetherOS</title>
+    <style>
+        :root {
+            --phone-width: 380px;
+            --phone-height: 800px;
+            --bezel-color: #1a1a1a;
+            --screen-bg: #000;
+            --accent-color: #007AFF;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* Phone Hardware */
+        .phone-frame {
+            width: var(--phone-width);
+            height: var(--phone-height);
+            background: var(--bezel-color);
+            border-radius: 60px;
+            padding: 12px;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.5), inset 0 0 4px #555;
+            position: relative;
+            border: 4px solid #333;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: var(--screen-bg);
+            border-radius: 48px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 35px;
+            background: black;
+            border-radius: 20px;
+            z-index: 1000;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Wallpapers */
+        .wallpaper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+            transition: filter 0.5s ease;
+        }
+
+        /* OS Layers */
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(1.05); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Startup Elements */
+        .apple-logo-svg {
+            width: 80px;
+            fill: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        /* UI Elements */
+        .input-group {
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        input {
+            width: 80%;
+            padding: 15px;
+            border-radius: 15px;
+            border: none;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            color: white;
+            text-align: center;
+            font-size: 1.1rem;
+            outline: none;
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border-radius: 30px;
+            border: none;
+            background: white;
+            color: black;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        /* Lock Screen */
+        .clock {
+            font-size: 4rem;
+            font-weight: 200;
+            margin-top: 60px;
+        }
+
+        .date {
+            font-size: 1.2rem;
+            margin-bottom: auto;
+        }
+
+        .unlock-handle {
+            width: 140px;
+            height: 5px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: -100px;
+            left: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(20px);
+            color: black;
+            padding: 15px;
+            border-radius: 20px;
+            z-index: 2000;
+            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .notification.show { top: 60px; }
+
+        /* Home Screen */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 100px;
+        }
+
+        .app-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        /* Custom Settings Icon (No Emojis) */
+        .settings-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #8e8e93 0%, #48484a 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .settings-icon-inner {
+            width: 30px;
+            height: 30px;
+            border: 4px solid #d1d1d6;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .settings-icon-inner::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: #d1d1d6;
+            border-radius: 50%;
+        }
+
+        /* Settings Page */
+        .settings-page {
+            background: #000;
+            z-index: 100;
+            text-align: left;
+            padding-top: 80px;
+        }
+
+        .settings-header {
+            width: 100%;
+            padding: 0 20px;
+            margin-bottom: 30px;
+        }
+
+        .settings-list {
+            width: 100%;
+            background: #1c1c1e;
+            border-radius: 12px;
+            margin: 10px 0;
+        }
+
+        .settings-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #38383a;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .back-home {
+            position: absolute;
+            bottom: 20px;
+            width: 140px;
+            height: 5px;
+            background: white;
+            border-radius: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+        }
+
+        /* Loading Screen */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <div class="screen" id="screen">
+            <div class="dynamic-island" id="island"></div>
+            <div class="wallpaper" id="wallpaper"></div>
+            
+            <!-- Notification Area -->
+            <div class="notification" id="notif">
+                <strong id="notif-title">AetherOS</strong><br>
+                <span id="notif-body">Your message here.</span>
+            </div>
+
+            <!-- 1. Boot Screen -->
+            <div class="layer active" id="layer-boot" onclick="startBoot()">
+                <p id="boot-text">Tap to Power On</p>
+                <div id="boot-logo" style="display:none">
+                    <svg class="apple-logo-svg" viewBox="0 0 170 170">
+                        <path d="M150.37,130.25c-2.45,5.66-5.35,10.87-8.71,15.66c-8.58,12.23-17.67,24.35-31.15,24.35c-12.95,0-17.39-7.74-32.35-7.74 c-14.95,0-19.83,7.5-32.11,7.74c-13.23,0.24-23.35-13.19-31.98-25.34c-17.63-24.9-30.41-70.33-12.11-101.52 c9.1-15.52,25.34-25.34,43.08-25.34c13.71,0,26.4,9.48,34.79,9.48c8.16,0,23.59-11.41,40.15-11.41 c7.11,0,27.1,2.56,39.87,20.94c-1.12,0.67-23.89,13.79-23.89,41.2c0,32.7,28.66,44.24,28.9,44.33 C165.25,116.75,158.42,122.28,150.37,130.25z M112.5,23.5c0-15.01,12.22-27.23,27.23-27.23c0.16,0,0.32,0,0.48,0 c0,15.17-12.22,27.46-27.23,27.46C112.75,23.73,112.5,23.61,112.5,23.5z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 2. Setup Wizard: Name -->
+            <div class="layer" id="layer-setup-name">
+                <h1>Welcome to 2027</h1>
+                <p>What is your name?</p>
+                <div class="input-group">
+                    <input type="text" id="setup-name-input" placeholder="Enter Name">
+                </div>
+                <button class="btn" onclick="nextSetup('setup-pin')">Continue</button>
+            </div>
+
+            <!-- 3. Setup Wizard: PIN -->
+            <div class="layer" id="layer-setup-pin">
+                <h1>Security</h1>
+                <p>Create a 4-digit PIN</p>
+                <div class="input-group">
+                    <input type="password" id="setup-pin-input" maxlength="4" placeholder="••••">
+                </div>
+                <button class="btn" onclick="nextSetup('setup-wallpaper')">Secure Device</button>
+            </div>
+
+            <!-- 4. Setup Wizard: Wallpaper -->
+            <div class="layer" id="layer-setup-wallpaper">
+                <h1>Personalize</h1>
+                <p>Pick your vibe</p>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <div onclick="setWall('linear-gradient(45deg, #ee9ca7, #ffdde1)')" style="width:50px; height:80px; border-radius:10px; background:linear-gradient(45deg, #ee9ca7, #ffdde1); border:2px solid white"></div>
+                    <div onclick="setWall('linear-gradient(45deg, #2193b0, #6dd5ed)')" style="width:50px; height:80px; border-radius:10px; background:linear-gradient(45deg, #2193b0, #6dd5ed); border:2px solid white"></div>
+                    <div onclick="setWall('linear-gradient(45deg, #1f1c2c, #928dab)')" style="width:50px; height:80px; border-radius:10px; background:linear-gradient(45deg, #1f1c2c, #928dab); border:2px solid white"></div>
+                </div>
+                <button class="btn" onclick="finishSetup()">Finish Setup</button>
+            </div>
+
+            <!-- 5. Loading OS -->
+            <div class="layer" id="layer-loading">
+                <div class="loader"></div>
+                <p style="margin-top:20px">Preparing AetherOS...</p>
+            </div>
+
+            <!-- 6. Lock Screen -->
+            <div class="layer" id="layer-lock">
+                <div class="clock" id="lock-clock">12:00:00</div>
+                <div class="date" id="lock-date">Monday, January 1</div>
+                <div style="margin-top: auto; width: 100%;">
+                    <div id="pin-area" style="display:none; margin-bottom: 20px;">
+                        <input type="password" id="unlock-pin-input" maxlength="4" placeholder="Enter PIN" style="width:60%">
+                        <p onclick="forgotPin()" style="font-size:0.8rem; margin-top:10px; color: #ccc; cursor:pointer">Forgot PIN?</p>
+                    </div>
+                    <div class="unlock-handle" id="handle" onmousedown="showPinEntry()" ontouchstart="showPinEntry()"></div>
+                    <p id="handle-text">Swipe up to unlock</p>
+                </div>
+            </div>
+
+            <!-- 7. Home Screen -->
+            <div class="layer" id="layer-home">
+                <div class="app-grid">
+                    <div class="app-icon" onclick="openApp('settings')">
+                        <div class="settings-icon">
+                            <div class="settings-icon-inner"></div>
+                        </div>
+                        <span style="font-size: 0.75rem;">Settings</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. Settings App -->
+            <div class="layer settings-page" id="layer-settings">
+                <div class="settings-header">
+                    <h1 style="font-size: 2rem;">Settings</h1>
+                </div>
+                <div class="settings-list">
+                    <div class="settings-item">
+                        <span>Name</span>
+                        <span id="set-val-name" style="color: #8e8e93;">User</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>OS Version</span>
+                        <span style="color: #8e8e93;">AetherOS 1.0.4</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Storage</span>
+                        <span style="color: #8e8e93;">2 TB</span>
+                    </div>
+                </div>
+                <div class="settings-list">
+                    <div class="settings-item" onclick="resetPhone()" style="color: #ff3b30; cursor:pointer">
+                        <span>Reset All Content</span>
+                    </div>
+                </div>
+                <div class="back-home" onclick="goHome()"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let userData = JSON.parse(localStorage.getItem('aether_user')) || {
+            setupComplete: false,
+            name: '',
+            pin: '',
+            wallpaper: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)'
+        };
+
+        const layers = ['boot', 'setup-name', 'setup-pin', 'setup-wallpaper', 'loading', 'lock', 'home', 'settings'];
+        
+        function showLayer(id) {
+            layers.forEach(l => document.getElementById(`layer-${l}`).classList.remove('active'));
+            document.getElementById(`layer-${id}`).classList.add('active');
+        }
+
+        // Clock Logic (EST)
+        function updateClock() {
+            const now = new Date();
+            const options = { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const timeStr = new Intl.DateTimeFormat('en-US', options).format(now);
+            document.getElementById('lock-clock').innerText = timeStr;
+            
+            const dateOptions = { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' };
+            document.getElementById('lock-date').innerText = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Boot & Setup Flow
+        function startBoot() {
+            document.getElementById('boot-text').style.display = 'none';
+            document.getElementById('boot-logo').style.display = 'block';
+            
+            setTimeout(() => {
+                if (userData.setupComplete) {
+                    initPhone();
+                } else {
+                    showLayer('setup-name');
+                }
+            }, 2500);
+        }
+
+        function nextSetup(next) {
+            const nameInput = document.getElementById('setup-name-input').value;
+            const pinInput = document.getElementById('setup-pin-input').value;
+            
+            if (next === 'setup-pin' && !nameInput) return alert("Enter your name");
+            if (next === 'setup-wallpaper' && pinInput.length < 4) return alert("Enter 4 digits");
+            
+            userData.name = nameInput || userData.name;
+            userData.pin = pinInput || userData.pin;
+            showLayer(next);
+        }
+
+        function setWall(grad) {
+            userData.wallpaper = grad;
+            document.getElementById('wallpaper').style.background = grad;
+        }
+
+        function finishSetup() {
+            userData.setupComplete = true;
+            saveData();
+            showLayer('loading');
+            setTimeout(() => {
+                showLayer('lock');
+            }, 6000); // 6 second futuristic loading
+        }
+
+        function saveData() {
+            localStorage.setItem('aether_user', JSON.stringify(userData));
+        }
+
+        function initPhone() {
+            document.getElementById('wallpaper').style.background = userData.wallpaper;
+            document.getElementById('set-val-name').innerText = userData.name;
+            showLayer('lock');
+        }
+
+        // Lock Screen Interaction
+        function showPinEntry() {
+            document.getElementById('pin-area').style.display = 'block';
+            document.getElementById('handle').style.display = 'none';
+            document.getElementById('handle-text').style.display = 'none';
+            document.getElementById('unlock-pin-input').focus();
+        }
+
+        document.getElementById('unlock-pin-input').addEventListener('input', (e) => {
+            if (e.target.value === userData.pin) {
+                e.target.value = '';
+                document.getElementById('pin-area').style.display = 'none';
+                document.getElementById('handle').style.display = 'block';
+                document.getElementById('handle-text').style.display = 'block';
+                showLayer('home');
+            }
+        });
+
+        function forgotPin() {
+            const notif = document.getElementById('notif');
+            document.getElementById('notif-title').innerText = "AetherOS Recovery";
+            document.getElementById('notif-body').innerText = `Your security PIN is: ${userData.pin}`;
+            notif.classList.add('show');
+            setTimeout(() => notif.classList.remove('show'), 5000);
+        }
+
+        // App Navigation
+        function openApp(app) {
+            if (app === 'settings') {
+                showLayer('settings');
+            }
+        }
+
+        function goHome() {
+            showLayer('home');
+        }
+
+        function resetPhone() {
+            if(confirm("Wipe all data from this iPhone 18?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Initialize if already setup
+        window.onload = () => {
+            if(userData.setupComplete) {
+                document.getElementById('boot-text').innerText = "Tap to Wake";
+                document.getElementById('wallpaper').style.background = userData.wallpaper;
+            }
+        };
+    </script>
+</body>
+</html>
